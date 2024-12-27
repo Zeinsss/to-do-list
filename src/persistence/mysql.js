@@ -1,54 +1,50 @@
 const waitPort = require('wait-port');
-const fs = require('fs');
 const mysql = require('mysql2');
+const fs = require('fs');
 
 const {
     MYSQL_HOST: HOST,
-    MYSQL_HOST_FILE: HOST_FILE,
     MYSQL_USER: USER,
-    MYSQL_USER_FILE: USER_FILE,
     MYSQL_PASSWORD: PASSWORD,
-    MYSQL_PASSWORD_FILE: PASSWORD_FILE,
     MYSQL_DB: DB,
-    MYSQL_DB_FILE: DB_FILE,
 } = process.env;
 
 let pool;
 
 async function init() {
-    const host = HOST_FILE ? fs.readFileSync(HOST_FILE) : HOST;
-    const user = USER_FILE ? fs.readFileSync(USER_FILE) : USER;
-    const password = PASSWORD_FILE ? fs.readFileSync(PASSWORD_FILE) : PASSWORD;
-    const database = DB_FILE ? fs.readFileSync(DB_FILE) : DB;
-
+    // Wait for the RDS instance to be accessible
     await waitPort({ 
-        host, 
-        port: 3306,
-        timeout: 10000,
-        waitForDns: true,
+        host: HOST, 
+        port: 3306, 
+        timeout: 10000, 
+        waitForDns: true 
     });
 
+    // Create a connection pool
     pool = mysql.createPool({
         connectionLimit: 5,
-        host,
-        user,
-        password,
-        database,
+        host: HOST,
+        user: USER.trim(),
+        password: PASSWORD,
+        database: DB,
         charset: 'utf8mb4',
+        ssl: { 
+            rejectUnauthorized: false
+        }, // Use SSL if RDS requires it
     });
 
-    return new Promise((acc, rej) => {
+    return new Promise((resolve, reject) => {
         pool.query(
             'CREATE TABLE IF NOT EXISTS todo_items (id varchar(36), name varchar(255), completed boolean) DEFAULT CHARSET utf8mb4',
-            err => {
-                if (err) return rej(err);
-
-                console.log(`Connected to mysql db at host ${HOST}`);
-                acc();
-            },
+            (err) => {
+                if (err) return reject(err);
+                console.log(`Connected to MySQL database at ${HOST}`);
+                resolve();
+            }
         );
     });
 }
+
 
 async function teardown() {
     return new Promise((acc, rej) => {
