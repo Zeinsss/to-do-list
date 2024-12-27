@@ -21,7 +21,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '16' # specify your Node.js version here
+        node-version: '20'  # specify your Node.js version here
 
     # Install dependencies
     - name: Install dependencies
@@ -58,7 +58,6 @@ jobs:
     - name: Build Docker image
       run: |
         docker build -t my-app-image .
-        
 
     - name: Push Docker image to ECR
       run: |
@@ -78,14 +77,44 @@ jobs:
       uses: webfactory/ssh-agent@v0.5.3
       with:
         ssh-private-key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-      
 
-    - name: Deploy to EC2
+    # Ensure Docker is running on EC2 (skip if it's already set up)
+    - name: Set up Docker on EC2
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << EOF
-          cd /path/to/app
-          docker pull ${{ secrets.AWS_ECR_REPOSITORY_URI }}:latest
-          docker-compose down
-          docker-compose up -d
+          if ! command -v docker &> /dev/null
+          then
+            echo "Docker not found. Installing..."
+            sudo apt-get update && sudo apt-get install -y docker.io
+            sudo systemctl start docker
+            sudo systemctl enable docker
+          fi
         EOF
 
+    - name: Deploy to EC2
+      env:
+        MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+        MYSQL_PORT: ${{ secrets.MYSQL_PORT }}
+        MYSQL_USER: ${{ secrets.MYSQL_USER }}
+        MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        MYSQL_DB: ${{ secrets.MYSQL_DB }}
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} << EOF
+          # Navigate to the app directory
+          cd /path/to/app
+          
+          # Pull the latest image from ECR
+          docker pull ${{ secrets.AWS_ECR_REPOSITORY_URI }}:latest
+          
+          # Stop and remove any existing container
+          docker stop app || true
+          docker rm app || true
+
+          # Run the new container with environment variables
+          docker run --env MYSQL_HOST=${MYSQL_HOST} \
+                     --env MYSQL_PORT=${MYSQL_PORT} \
+                     --env MYSQL_USER=${MYSQL_USER} \
+                     --env MYSQL_PASSWORD=${MYSQL_PASSWORD} \
+                     --env MYSQL_DB=${MYSQL_DB} \
+                     -d -p 80:3000 --name app ${{ secrets.AWS_ECR_REPOSITORY_URI }}:latest
+        EOF
