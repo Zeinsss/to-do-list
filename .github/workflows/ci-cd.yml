@@ -58,14 +58,9 @@ jobs:
         working-directory: ./terraform
         run: terraform validate
 
-      - name: Plan Terraform deployment
-        working-directory: ./terraform
-        run: terraform plan -out=tfplan
-
       - name: Apply Terraform deployment
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: ./terraform
-        run: terraform apply -input=false tfplan
+        run: terraform apply -auto-approve
 
   deploy:
     runs-on: ubuntu-latest
