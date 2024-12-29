@@ -12,6 +12,7 @@ terraform {
 resource "aws_instance" "Cloud-Docker-EC2" {
   ami           = "ami-003f5a76758516d1e" 
   instance_type = "t2.micro"
+  associate_public_ip_address = true
   security_groups = [ 
     "launch-wizard-18"
    ]
@@ -35,4 +36,7 @@ resource "aws_db_instance" "cloud_db" {
   skip_final_snapshot = true
 }
 
+resource "aws_eip" "my_eip" {
+  instance = aws_instance.Cloud-Docker-EC2.id
+}
 
