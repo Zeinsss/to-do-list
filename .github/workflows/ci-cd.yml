@@ -36,7 +36,7 @@ jobs:
       - name: Run tests
         run: npm test
 
-  terraform:
+  deploy-infrastructure:
     runs-on: ubuntu-latest
     needs: build  # Ensure Terraform runs after the build is successful
 
@@ -66,9 +66,9 @@ jobs:
         working-directory: ./terraform
         run: terraform apply -auto-approve
 
-  deploy:
+  upload-docker-image:
     runs-on: ubuntu-latest
-    needs: terraform  
+    needs: deploy-infrastructure 
 
     steps:
       - name: Checkout code
@@ -93,9 +93,9 @@ jobs:
           docker tag my-app-image:latest ${{ env.ECR_REPOSITORY_URI }}:latest
           docker push ${{ env.ECR_REPOSITORY_URI }}:latest
 
-  deploy-to-ec2:
+  docker-deploy-to-ec2:
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: upload-docker-image
 
     steps:
       - name: Checkout code
