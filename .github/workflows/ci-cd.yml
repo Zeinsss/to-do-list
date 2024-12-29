@@ -148,3 +148,5 @@ jobs:
             docker ps
             docker logs app
           EOF
+
+          
