@@ -111,7 +111,7 @@ jobs:
         run: |
           echo "SSH into EC2 instance at IP: ${{ secrets.EC2_HOST }}"
           
-          # Re-authenticate Docker on EC2 to pull images from ECR
+          # SSH into EC2 instance to deploy application
           ssh -o StrictHostKeyChecking=no -i private-key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             echo "Deploying application to EC2 instance..."
@@ -124,8 +124,8 @@ jobs:
               sudo systemctl enable docker
             fi
 
-            # Log in to Amazon ECR
-            aws ecr get-login-password --region ${{ env.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ env.ECR_REPOSITORY_URI }}
+            # Log in to Amazon ECR again to get a fresh authentication token
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REPOSITORY_URI }}
 
             # Clean up old images
             docker image prune -f
@@ -147,3 +147,4 @@ jobs:
 
             echo "Application deployed successfully!"
           EOF
+
