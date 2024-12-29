@@ -44,6 +44,9 @@ jobs:
         with:
           terraform_version: 1.5.0  # Specify the Terraform version
 
+      - name: Terraform login to Terraform Cloud
+        run: echo "${{ secrets.TF_API_TOKEN }}" | terraform login
+
       - name: Initialize Terraform
         working-directory: ./terraform
         run: terraform init
