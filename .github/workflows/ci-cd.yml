@@ -137,13 +137,12 @@ jobs:
             docker rm app || true
 
             # Start the new container
-            docker run 
-              --env MYSQL_HOST=cloud-db.chsw484mgkia.ap-southeast-2.rds.amazonaws.com                        
-              --env MYSQL_PORT=3306                        
-              --env MYSQL_USER=admin                       
-              --env MYSQL_PASSWORD=tithya123                        
-              --env MYSQL_DB=cloud 
-            -d -p 80:3000 --name app 140023379613.dkr.ecr.ap-southeast-2.amazonaws.com/cloud:latest
+            docker run --env MYSQL_HOST=cloud-db.chsw484mgkia.ap-southeast-2.rds.amazonaws.com \
+                       --env MYSQL_PORT=3306 \
+                       --env MYSQL_USER=admin \
+                       --env MYSQL_PASSWORD=tithya123 \
+                       --env MYSQL_DB=cloud \
+                       -d -p 80:3000 --name app 140023379613.dkr.ecr.ap-southeast-2.amazonaws.com/cloud:latest
 
             echo "Application deployed successfully!"
             docker logs app
